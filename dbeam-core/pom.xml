@@ -6,7 +6,7 @@
     <parent>
       <artifactId>dbeam-parent</artifactId>
       <groupId>com.spotify</groupId>
-      <version>0.9.15-SNAPSHOT</version>
+      <version>0.9.18-SNAPSHOT</version>
     </parent>
 
     <name>DBeam Core</name>
@@ -97,6 +97,10 @@
           <groupId>com.google.apis</groupId>
           <artifactId>google-api-services-cloudkms</artifactId>
       </dependency>
+      <dependency>
+          <groupId>com.google.auth</groupId>
+          <artifactId>google-auth-library-oauth2-http</artifactId>
+      </dependency>
 
       <dependency>
           <groupId>com.google.api-client</groupId>
@@ -140,6 +144,12 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.findify</groupId>
+        <artifactId>s3mock_2.13</artifactId>
+        <version>0.2.6</version>
         <scope>test</scope>
       </dependency>
       <dependency>

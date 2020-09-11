@@ -5,7 +5,7 @@
 
     <groupId>com.spotify</groupId>
     <artifactId>dbeam-parent</artifactId>
-    <version>0.9.15-SNAPSHOT</version>
+    <version>0.9.18-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>dbeam-parent</name>
 
@@ -120,24 +120,27 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
-        <beam.version>2.20.0</beam.version>
+        <beam.version>2.23.0</beam.version>
         <postgresql.version>42.2.12</postgresql.version>
         <mysql.version>8.0.19</mysql.version>
-        <socket-factory.version>1.0.14</socket-factory.version>
+        <socket-factory.version>1.0.16</socket-factory.version>
 
         <!--Ensure Beam SDK compatibility-->
-        <!--https://github.com/apache/beam/blob/master/buildSrc/src/main/groovy/org/apache/beam/gradle/BeamModulePlugin.groovy-->
+        <!--https://github.com/apache/beam/blob/release-2.23.0/buildSrc/src/main/groovy/org/apache/beam/gradle/BeamModulePlugin.groovy#L378-->
         <guava.version>28.2-jre</guava.version>
         <jackson.version>2.10.2</jackson.version>
         <slf4j.version>1.7.30</slf4j.version>
-        <auto-value.version>1.7</auto-value.version>
+        <auto-value.version>1.7.1</auto-value.version>
         <protobuf.version>3.11.1</protobuf.version>
         <findbugs.version>3.0.2</findbugs.version>
-        <grpc.version>1.25.0</grpc.version>
-        <netty.version>4.1.45.Final</netty.version>
+        <grpc.version>1.27.2</grpc.version>
+        <netty.version>4.1.46.Final</netty.version>
+        <proto-google-common-protos.version>1.17.0</proto-google-common-protos.version>
         <google-clients.version>1.30.9</google-clients.version>
         <google-http-clients.version>1.34.0</google-http-clients.version>
-        <google.cloud.core.version>1.92.2</google.cloud.core.version>
+        <google-oauth.version>1.30.6</google-oauth.version>
+        <google-auth.version>0.20.0</google-auth.version>
+        <google-cloud-core.version>1.92.2</google-cloud-core.version>
         <opencensus.version>0.24.0</opencensus.version>
 
         <junit.version>4.13</junit.version>
@@ -250,6 +253,10 @@
                     </exclusion>
                     <exclusion>
                         <groupId>com.google.protobuf</groupId>
+                        <artifactId>protobuf-java</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.google.protobuf</groupId>
                         <artifactId>protobuf-java-util</artifactId>
                     </exclusion>
                     <exclusion>
@@ -301,15 +308,47 @@
                         <artifactId>google-http-client-jackson2</artifactId>
                     </exclusion>
                     <exclusion>
+                        <groupId>com.google.auth</groupId>
+                        <artifactId>google-auth-library-credentials</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.google.auth</groupId>
+                        <artifactId>google-auth-library-oauth2-http</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>io.grpc</groupId>
                         <artifactId>grpc-context</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.conscrypt</groupId>
+                        <artifactId>conscrypt-openjdk-uber</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.grpc</groupId>
+                        <artifactId>grpc-stub</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.grpc</groupId>
+                        <artifactId>grpc-protobuf</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.grpc</groupId>
+                        <artifactId>grpc-netty-shaded</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.grpc</groupId>
+                        <artifactId>grpc-auth</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.grpc</groupId>
+                        <artifactId>grpc-alts</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.google.apis</groupId>
                 <artifactId>google-api-services-cloudkms</artifactId>
-                <version>v1-rev20200221-1.30.9</version>
+                <version>v1-rev20200522-1.30.9</version>
             </dependency>
             <dependency>
                 <groupId>io.opencensus</groupId>
@@ -324,7 +363,7 @@
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>google-cloud-core</artifactId>
-                <version>${google.cloud.core.version}</version>
+                <version>${google-cloud-core.version}</version>
             </dependency>
 
             <dependency>
@@ -352,6 +391,13 @@
                 <groupId>org.apache.avro</groupId>
                 <artifactId>avro</artifactId>
                 <version>1.9.2</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.commons</groupId>
+                        <artifactId>commons-compress</artifactId>
+                        <!--org.apache.commons:commons-compress:1.20 available in other dependency-->
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.grpc</groupId>
@@ -390,6 +436,16 @@
                 <version>${grpc.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-alts</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-netty-shaded</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-handler</artifactId>
                 <version>${netty.version}</version>
@@ -407,7 +463,7 @@
             <dependency>
                 <groupId>com.google.api.grpc</groupId>
                 <artifactId>proto-google-common-protos</artifactId>
-                <version>1.12.0</version>
+                <version>${proto-google-common-protos.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.api-client</groupId>
@@ -444,6 +500,27 @@
                 <groupId>com.google.http-client</groupId>
                 <artifactId>google-http-client-test</artifactId>
                 <version>${google-http-clients.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.oauth-client</groupId>
+                <artifactId>google-oauth-client</artifactId>
+                <version>${google-oauth.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.http-client</groupId>
+                        <artifactId>google-http-client</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.google.auth</groupId>
+                <artifactId>google-auth-library-credentials</artifactId>
+                <version>${google-auth.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.auth</groupId>
+                <artifactId>google-auth-library-oauth2-http</artifactId>
+                <version>${google-auth.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -502,6 +579,12 @@
                 <groupId>org.hamcrest</groupId>
                 <artifactId>hamcrest-library</artifactId>
                 <version>${hamcrest.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.findify</groupId>
+                <artifactId>s3mock_2.13</artifactId>
+                <version>0.2.6</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -746,7 +829,7 @@
 
                 <plugin>
                     <artifactId>maven-site-plugin</artifactId>
-                    <version>3.7.1</version>
+                    <version>3.9.1</version>
                 </plugin>
 
                 <plugin>
@@ -769,7 +852,7 @@
                 </plugin>
                 <plugin> <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-project-info-reports-plugin</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.1.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>

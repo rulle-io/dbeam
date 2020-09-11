@@ -25,14 +25,21 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.AnonymousAWSCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.spotify.dbeam.DbTestHelper;
 import com.spotify.dbeam.TestHelper;
 import com.spotify.dbeam.avro.JdbcAvroMetering;
 import com.spotify.dbeam.options.OutputOptions;
+import io.findify.s3mock.S3Mock;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -44,12 +51,13 @@ import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.beam.sdk.io.aws.options.S3Options;
+import org.apache.beam.sdk.io.aws.s3.DefaultS3ClientBuilderFactory;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class JdbcAvroJobTest {
@@ -221,23 +229,68 @@ public class JdbcAvroJobTest {
   }
 
   @Test
-  @Ignore // Cannot run this test towards a Amazon S3 bucket. For manual testing only.
-  public void shouldRunJdbcAvroJobS3() throws IOException {
-    String outputPath = "s3://com.privacyone.bigdata/2020-05-28/18/";
+  public void shouldRunJdbcAvroJobS3() throws Exception {
+    final String s3Path = "s3://testbucket/test/";
+    final Path outputPath = testDir.resolve("shouldRunJdbcAvroJobS3");
+    final Path outputLocalS3Path = Paths.get(outputPath.toString(), "testbucket/test/");
+    final String s3Endpoint = "http://localhost:8001";
 
-    JdbcAvroJob.main(
-        new String[] {
-          "--targetParallelism=1", // no need for more threads when testing
-          "--partition=2025-02-28",
-          "--skipPartitionCheck",
-          "--exportTimeout=PT1M",
-          "--connectionUrl=" + CONNECTION_URL,
-          "--username=",
-          "--passwordFile=" + passwordPath.toString(),
-          "--table=COFFEES",
-          "--awsRegion=eu-west-1",
-          "--output=" + outputPath,
-          "--avroCodec=zstandard1"
+    S3Mock api = new S3Mock.Builder().withPort(8001).withFileBackend(outputPath.toString()).build();
+    api.start();
+
+    // create aws client
+    AwsClientBuilder.EndpointConfiguration endpoint = new
+            AwsClientBuilder.EndpointConfiguration(s3Endpoint,"no-matter");
+    AmazonS3Client client = (AmazonS3Client) AmazonS3ClientBuilder
+            .standard()
+            .withPathStyleAccessEnabled(true)
+            .withEndpointConfiguration(endpoint)
+            .withCredentials(new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()))
+            .build();
+
+    // create the bucket for storing the data
+    client.createBucket("testbucket");
+
+    final PipelineOptions pipelineOptions = JdbcAvroJob.buildPipelineOptions(new String[] {
+        "--targetParallelism=1", // no need for more threads when testing
+        "--partition=2025-02-28",
+        "--skipPartitionCheck",
+        "--exportTimeout=PT1M",
+        "--awsRegion=no-matter",
+        "--connectionUrl=" + CONNECTION_URL,
+        "--username=",
+        "--passwordFile=" + passwordPath.toString(),
+        "--table=COFFEES",
+        "--output=" + s3Path,
+        "--avroCodec=zstandard1"
         });
+
+    // we need to set local s3Endpoint and path style s3 access to resolve our mock server
+    pipelineOptions.as(S3Options.class).setAwsServiceEndpoint(s3Endpoint);
+    pipelineOptions.as(S3Options.class).setS3ClientFactoryClass(
+            PathStyleAccessS3ClientBuilderFactory.class);
+
+    JdbcAvroJob.create(pipelineOptions).runExport();
+
+
+    assertThat(
+            TestHelper.listDir(outputLocalS3Path.resolve("_queries").toFile()),
+            containsInAnyOrder("query_0.sql"));
+    Schema schema = new Schema.Parser().parse(outputLocalS3Path.resolve("_AVRO_SCHEMA.avsc")
+            .toFile());
+    List<GenericRecord> records =
+            readAvroRecords(outputLocalS3Path.resolve("part-00000-of-00001.avro").toFile(), schema);
+    assertThat(records, hasSize(2));
+
+    api.shutdown();
+  }
+
+
+  private static class PathStyleAccessS3ClientBuilderFactory extends DefaultS3ClientBuilderFactory {
+    @Override
+    public AmazonS3ClientBuilder createBuilder(S3Options s3Options) {
+      return super.createBuilder(s3Options).withPathStyleAccessEnabled(true);
+    }
   }
 }
+
